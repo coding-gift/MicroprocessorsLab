@@ -1,133 +1,58 @@
 #include <xc.inc>
 
-extrn LCD_Setup, LCD_Write_Message, LCD_Write_Hex, LCD_Send_Byte_I, LCD_delay_ms, LCD_Send_Byte_D
-    
+extrn	LCD_Setup, LCD_Write_Message, LCD_Write_Hex ; external LCD subroutines
+
+	
 psect	udata_acs   ; reserve data space in access ram
-counter_pt:	ds 1    ; counter for printing the initial data
-counter_ec:	ds 1	; encoding counter
-next_address:    ds 1	; store the nex adrdress to write to
+counter:    ds 1    ; reserve one byte for a counter variable
+delay_count:ds 1    ; reserve one byte for counter in the delay routine
     
 psect	udata_bank4 ; reserve data anywhere in RAM (here at 0x400)
-PlaintextArray:    ds 0x80 ; reserve 128 bytes for message data
-CiphertextArray:    ds 0x80 ; reserve 128 bytes for modified message data
+myArray:    ds 0x80 ; reserve 128 bytes for message data
 
-    
 psect	data    
 	; ******* myTable, data in programme memory, and its length *****
-PlaintextTable:
-	db	'P','l','a','i','n','t','e','x','t'
-					
-	TableLength   EQU	9	
+myTable:
+	db	'H','e','l','l','o',' ','W','o','r','l','d','!',0x0a  ; message, plus carriage return
+	myTable_l   EQU	13	; length of data
 	align	2
     
-CiphertextTable:
-	db	'b','a','a', 'a','a','a','a','a','a'
-	TableLength   EQU	9
-	align	2
+psect	code, abs	
+rst: 	org 0x0
+ 	goto	setup
 
-psect code, abs
-rst:	org 0x0
-	goto setup
- 
 	; ******* Programme FLASH read Setup Code ***********************
 setup:	bcf	CFGS	; point to Flash program memory  
 	bsf	EEPGD 	; access Flash program memory
-	call	LCD_Setup	; setup UART
-	movlw	0x00
-	movwf	TRISH, A
-	movlw	0x00
-	movwf	PORTH, A
+	call	LCD_Setup	; setup LCD
 	goto	start
-
-start:
-	call	setup_plaintext		; our counter register
-	call	print_message
 	
-	movlw	0xFF
-	call	LCD_delay_ms
-	
-	call    modify_table     
-	call	setup_ciphertext
-    	call	print_message
-	
-	movlw	0xFF
-	call	LCD_delay_ms
-	movlw	0xFF
-	call	LCD_delay_ms
-	
-	goto	ending
-	
-setup_plaintext:
-	lfsr	0, PlaintextArray	; Load FSR0 with address in RAM	
-	movlw	low highword(PlaintextTable)	; address of data in PM
+	; ******* Main programme ****************************************
+start: 	lfsr	0, myArray	; Load FSR0 with address in RAM	
+	movlw	low highword(myTable)	; address of data in PM
 	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
-	movlw	high(PlaintextTable)	; address of data in PM
+	movlw	high(myTable)	; address of data in PM
 	movwf	TBLPTRH, A		; load high byte to TBLPTRH
-	movlw	low(PlaintextTable)	; address of data in PM
+	movlw	low(myTable)	; address of data in PM
 	movwf	TBLPTRL, A		; load low byte to TBLPTRL
-	movlw	TableLength	; bytes to read
-	movwf 	counter_pt, A
-	return
-	
-setup_ciphertext:
-	lfsr	0, CiphertextArray	; Load FSR0 with address in RAM	
-	movlw	low highword(CiphertextTable)	; address of data in PM
-	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
-	movlw	high(CiphertextTable)	; address of data in PM
-	movwf	TBLPTRH, A		; load high byte to TBLPTRH
-	movlw	low(CiphertextTable)	; address of data in PM
-	movwf	TBLPTRL, A		; load low byte to TBLPTRL
-	movlw	TableLength	; bytes to read
-	movwf 	counter_pt, A
-	return
+	movlw	myTable_l	; bytes to read
+	movwf 	counter, A		; our counter register
+loop: 	tblrd*+			; one byte from PM to TABLAT, increment TBLPRT
+	movff	TABLAT, POSTINC0; move data from TABLAT to (FSR0), inc FSR0	
+	decfsz	counter, A		; count down to zero
+	bra	loop		; keep going until finished
 		
-print_message: 	
-	tblrd*+			
-	movff	TABLAT, POSTINC0
-	movf	TABLAT, W, A
-	call	LCD_Send_Byte_D
-	decfsz	counter_pt, A
-	bra	print_message
-	movlw	0xC0
-	call LCD_Send_Byte_I
+	movlw	myTable_l	; output message to UART
+	lfsr	2, myArray
+
+	movlw	myTable_l-1	; output message to LCD
+				; don't send the final carriage return to LCD
+	lfsr	2, myArray
+	call	LCD_Write_Message
+	
+	; a delay subroutine if you need one, times around loop in delay_count
+delay:	decfsz	delay_count, A	; decrement until zero
+	bra	delay
 	return
-	
-;modify_table:
-;	movf CiphertextArray, W, A
-;	movwf next_address, A
-;	call setup_plaintext
-;	
-;	goto modify_loop
-   
-;modify_loop:
-;	
-;	tblrd*+			    ; one byte from PM to TABLAT, increment TBLPRT
-;	movff	TABLAT, POSTINC0    ; move data from TABLAT to (FSR0), inc FSR0	
-;	movf	TABLAT, W, A
-;	movwf	next_address, A
-;	incf	next_address, A
-;	decfsz	counter_pt, A
-;	bra modify_loop
-;	
-;	return
-	
-modify_table:
-    call setup_ciphertext
 
-modify_loop:
-    tblrd*+              
-    movff   TABLAT, POSTINC0
-    movf    POSTINC0, W, A    
-    movf    TABLAT, W, A         
-    tblwt*+                
-    decfsz counter_ec, f, A   ; Decrement modification counter
-    bra modify_loop         ; Continue loop if not done
-
-    return
-
-
-ending:
-    nop
-    end rst
-    
-	
+	end	rst
