@@ -24,7 +24,11 @@ CiphertextTable:
 	db	'b','a','a', 'a','a','a','a','a','a'
 	TableLength   EQU	9
 	align	2
-	
+
+psect code, abs
+rst:	org 0x0
+	goto setup
+ 
 	; ******* Programme FLASH read Setup Code ***********************
 setup:	bcf	CFGS	; point to Flash program memory  
 	bsf	EEPGD 	; access Flash program memory
@@ -124,6 +128,6 @@ modify_loop:
 
 ending:
     nop
-end
+    end rst
     
 	
