@@ -1,157 +1,122 @@
 #include <xc.inc>
 
+global CiphertextArray, PlaintextArray, TableLength, counter_pt, counter_ec, counter_k, KeyArray
+
 extrn LCD_Setup, LCD_Write_Message, LCD_Write_Hex, LCD_Send_Byte_I, LCD_delay_ms, LCD_Send_Byte_D
+    
+extrn print_plaintext, print_ciphertext   
+extrn modify_table
+    
+psect udata_acs   ; reserve data space in access ram
+counter_pt:	ds 1    ; counter for printing the initial data
+counter_ec:	ds 1	; encoding counter
+counter_k:	ds 1	; counter for copying the key
+    
+psect udata_bank3 ; reserve data in Bank3
+PlaintextArray:    ds 0x80 ; reserve 128 bytes for message data
+CiphertextArray:   ds 0x80 ; reserve 128 bytes for modified message data
+    
+psect udata_bank4 ; reserve data in Bank4
+KeyArray:          ds 0x80 ; reserve 128 bytes for the KeyArray
 
-psect udata_acs
-counter_pt: ds 1
-counter_ec: ds 1
-key_index: ds 1
-
-psect udata_bank4
-CiphertextArray: ds 0x80
-
-psect data
+psect data    
+	; ******* myTable, data in programme memory, and its length *****
+PlaintextTable:
+	db	'P','l','a','i','n','t','e','x','t'
+					
+	TableLength   EQU	9	
+	align	2
+	
+psect key_data, class=CODE
 KeyTable:
-    db 'K','E','Y'
-KeyLength EQU 3
-align 2
+	db 'k', 'e', 'y','k', 'e', 'y','k', 'e', 'y'   ; Define the keyword "key"
+	KeyLength   EQU		9	
+	align	2
+	
+psect	code, abs
+rst:	org 0x0
+	goto setup
+	
+	; ******* Programme FLASH read Setup Code ***********************
 
-psect code
-PlaintextArray:
-    db 'P','l','a','i','n','t','e','x','t'
-TableLength EQU 9
-
-psect code, abs
-rst: org 0x0
-    goto setup
-
-setup:
-    bcf CFGS
-    bsf EEPGD
-    call LCD_Setup
-    movlw 0x00
-    movwf TRISH, A
-    movlw 0x00
-    movwf PORTH, A
-    goto start
+setup:	bcf	CFGS	; point to Flash program memory  
+	bsf	EEPGD 	; access Flash program memory
+	call	LCD_Setup	; setup UART
+	movlw	0x00
+	movwf	TRISH, A
+	movlw	0x00
+	movwf	PORTH, A
+	goto	start
 
 start:
-    call print_plaintext
-    movlw 0xC0
-    call LCD_Send_Byte_I
+	call	copy_plaintext		; Load plaintext from Flash to RAM
+	call	copy_key            ; Load key from Flash to RAM  <-- ADD THIS
+	call	print_plaintext		; Print the plaintext
 
-    movlw 0xFF
-    call LCD_delay_ms
+	movlw   0xC0        ; Move the cursor to the second line (or wherever needed)
+	call    LCD_Send_Byte_I
+	movlw	0x01	    ; allow time for cursor to move
+	call	LCD_delay_ms
+	
+	call modify_table        ; Modify the ciphertext array
+	call print_ciphertext    ; Print the modified data to the LCD
+	
+	goto	$
 
-    call vigenere_encrypt
-    call print_ciphertext
+copy_plaintext:
+    ;; Loads plaintext from Flash memory (PM) ? RAM
+    ;; Uses TBLPTR to read from Program Memory
+    ;; Uses FSR0 to store in RAM
+    ;; Prepares plaintext for encryption
+	lfsr	0, PlaintextArray	; Load FSR0 with address in RAM	
+	movlw	low highword(PlaintextTable)	; address of data in PM
+	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
+	movlw	high(PlaintextTable)	; address of data in PM
+	movwf	TBLPTRH, A		; load high byte to TBLPTRH
+	movlw	low(PlaintextTable)	; address of data in PM
+	movwf	TBLPTRL, A		; load low byte to TBLPTRL
+	movlw	TableLength	; bytes to read
+	movwf 	counter_pt, A
+	goto setup_loop
 
-    movlw 0xFF
-    call LCD_delay_ms
-    movlw 0xFF
-    call LCD_delay_ms
-    movlw 0xFF
-    call LCD_delay_ms
-    movlw 0xFF
-    call LCD_delay_ms
+setup_loop:
+	tblrd*+			; one byte from PM to TABLAT, increment TBLPRT
+	movff	TABLAT, POSTINC0; move data from TABLAT to (FSR0), inc FSR0	
+	movf	TABLAT, W, A
+	decfsz	counter_pt, A		; count down to zero
+	bra	setup_loop	; keep going until finished
+	return
 
-    goto ending
+copy_key:
+	lfsr 0, KeyArray     ; Load FSR0 with KeyArray address in RAM
+    
+	movlw low highword(KeyTable)   ; Load upper bits of KeyTable address
+	movwf TBLPTRU, A               ; Load address of KeyTable in Flash
+	movlw high(KeyTable)           ; Load high byte of KeyTable address
+	movwf TBLPTRH, A               ; 
+	movlw low(KeyTable)            ; Load low byte of KeyTable address
+	movwf TBLPTRL, A               ; 
 
-vigenere_encrypt:
-    lfsr 0, CiphertextArray
-    lfsr 2, KeyTable
+	movlw KeyLength                       ; Length of "key"
+	movwf counter_k, A            ; Store length in counter
 
-    movlw TableLength
-    movwf counter_ec, A
+copy_key_loop:
+	movf counter_k, W, A           ; Check if counter is zero
+	bz copy_key_done               ; If zero, stop
 
-    clrf key_index, A
+	tblrd*                         ; Read a byte from Flash (KeyTable)
+	movff TABLAT, INDF0            ; Store byte in KeyArray (RAM)
 
-    goto encrypt_loop
+	incf FSR0L, A                  ; Move to next RAM address
+	incf TBLPTRL, A                ; Move to next Flash address
 
-encrypt_loop:
-    movf counter_ec, W, A
-    bz encrypt_done
+	decfsz counter_k, A            ; Decrement counter
+	bra copy_key_loop              ; Loop until all bytes are copied
 
-    movlw HIGH(PlaintextArray)
-    movwf TBLPTRH
-    movlw LOW(PlaintextArray)
-    addwf counter_ec, W
-    movwf TBLPTRL
-    tblrd*+
-
-    movf TABLAT, W
-    sublw 'A'
-    movwf INDF1, A
-
-    movf INDF2, W, A
-    sublw 'A'
-    addwf INDF1, W, A
-    addlw 'A'
-    movwf POSTINC0, A
-
-    incf key_index, A
-    movf key_index, W, A
-    sublw KeyLength
-    btfsc STATUS, 2
-    clrf key_index, A
-
-    lfsr 2, KeyTable
-    addwf key_index, W, A
-    movwf FSR2L, A
-
-    decfsz counter_ec, A
-    bra encrypt_loop
-
-encrypt_done:
-    return
-
-print_ciphertext:
-    lfsr 0, CiphertextArray
-
-    movlw TableLength
-    movwf counter_pt, A
-    goto print_loop
-
-print_plaintext:
-    movlw TableLength
-    movwf counter_pt, A
-    goto print_plaintext_loop
-
-print_plaintext_loop:
-    movf counter_pt, W, A
-    bz print_plaintext_done
-
-    movlw HIGH(PlaintextArray)
-    movwf TBLPTRH
-    movlw LOW(PlaintextArray)
-    addwf counter_pt, W
-    movwf TBLPTRL
-    tblrd*+
-
-    movf TABLAT, W
-    call LCD_Send_Byte_D
-
-    decfsz counter_pt, A
-    bra print_plaintext_loop
-
-print_plaintext_done:
-    return
-
-print_loop:
-    movf counter_pt, W, A
-    bz print_done
-
-    movf POSTINC0, W, A
-    call LCD_Send_Byte_D
-
-    decfsz counter_pt, A
-    bra print_loop
-    goto print_done
-
-print_done:
-    return
+copy_key_done:
+	return
 
 ending:
     nop
-
+    
     end rst
