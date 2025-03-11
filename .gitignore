@@ -7,6 +7,7 @@
 *.o
 *.sdb
 *.obj.dmp
+*defmplabx*
 html/
 nbproject/private/
 nbproject/Package-*.bash
