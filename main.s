@@ -7,6 +7,7 @@ extrn LCD_Setup, LCD_Write_Message, LCD_Write_Hex, LCD_Send_Byte_I, LCD_delay_ms
 extrn print_plaintext, print_ciphertext,  send_characters, copy_plaintext
 extrn modify_table
 extrn measure_modify_table
+extrn initialise_rsa, p_val, q_val, n_val, phi_val, e_val
 
 psect	udata_acs		; reserve data space in access ram
 counter_pt:	ds 1		; counter for printing the initial data
@@ -36,10 +37,39 @@ setup:	bcf	CFGS		; point to Flash program memory
 	bsf	EEPGD		; access Flash program memory
 	call	LCD_Setup	; setup LCD
 	call	encode_setup
+	call	initialise_rsa
 	goto	start
 
 start:
-	call encoding_func
+	;call encoding_func
+	
+	movf	p_val, W, A
+	call	LCD_Write_Hex
+	
+	movlw ' '
+	call LCD_Send_Byte_D
+	
+	movf	q_val, W, A
+	call	LCD_Write_Hex
+	
+	movlw ' '
+	call LCD_Send_Byte_D
+	
+	movf	n_val, W, A
+	call	LCD_Write_Hex
+	
+	movlw ' '
+	call LCD_Send_Byte_D
+	
+	movf	phi_val, W, A
+	call	LCD_Write_Hex
+		
+	movlw ' '
+	call LCD_Send_Byte_D
+	
+	movf	e_val, W, A
+	call	LCD_Write_Hex
+
 	goto	$
 	
 
