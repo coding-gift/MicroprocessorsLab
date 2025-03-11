@@ -1,129 +1,99 @@
+
 #include <xc.inc>
 
+#include <xc.inc>
+global CiphertextArray, PlaintextArray, TableLength, counter_pt, counter_ec, timer_low, timer_high, PlaintextTable
 extrn LCD_Setup, LCD_Write_Message, LCD_Write_Hex, LCD_Send_Byte_I, LCD_delay_ms, LCD_Send_Byte_D
+extrn print_plaintext, print_ciphertext,  send_characters, copy_plaintext
+extrn modify_table
+extrn measure_modify_table
+
+psect	udata_acs		; reserve data space in access ram
+counter_pt:	ds 1		; counter for printing the initial data
+counter_ec:	ds 1		; encoding counter
+timer_low:	ds 1		; Store low byte of Timer1
+timer_high:	ds 1		; Store high byte of Timer1
+clock_pin:	ds 1
     
-psect	udata_acs   ; reserve data space in access ram
-counter_pt:	ds 1    ; counter for printing the initial data
-counter_ec:	ds 1	; encoding counter
-next_address:    ds 1	; store the nex adrdress to write to
-    
-psect	udata_bank4 ; reserve data anywhere in RAM (here at 0x400)
-PlaintextArray:    ds 0x80 ; reserve 128 bytes for message data
-CiphertextArray:    ds 0x80 ; reserve 128 bytes for modified message data
+psect	udata_bank4		; reserve data anywhere in RAM (here at 0x400)
+PlaintextArray:    ds 0x80	; reserve 128 bytes for message data
+CiphertextArray:    ds 0x80	; reserve 128 bytes for modified message data
 
     
 psect	data    
-	; ******* myTable, data in programme memory, and its length *****
 PlaintextTable:
-	db	'P','l','a','i','n','t','e','x','t'
-					
-	TableLength   EQU	9	
+	db	'H','e','l','l','o',' ', 'w','o','r','l','d'				
+	TableLength   EQU	11
+
 	align	2
-    
-CiphertextTable:
-	db	'b','a','a', 'a','a','a','a','a','a'
-	TableLength   EQU	9
-	align	2
+
 	
-	; ******* Programme FLASH read Setup Code ***********************
-setup:	bcf	CFGS	; point to Flash program memory  
-	bsf	EEPGD 	; access Flash program memory
-	call	LCD_Setup	; setup UART
-	movlw	0x00
-	movwf	TRISH, A
-	movlw	0x00
-	movwf	PORTH, A
+psect	code, abs
+rst:	org 0x0
+	goto setup
+	
+setup:	bcf	CFGS		; point to Flash program memory  
+	bsf	EEPGD		; access Flash program memory
+	call	LCD_Setup	; setup LCD
+	call	encode_setup
 	goto	start
 
 start:
-	call	setup_plaintext		; our counter register
-	call	print_message
+	call encoding_func
+	goto	$
 	
+
+encode_setup:
+    	movlw	0x00
+	movwf	TRISH, A	; setup clock pin output
+	movwf	TRISD, A	; set up message output
+	movlw	0x00
+	movwf	PORTH, A
+	return
+
+	
+decode_setup:
 	movlw	0xFF
+	movwf	TRISH, A	; setup clock pin input
+	movwf	TRISD, A	; set up message input
+	
+
+encoding_func:
+	call	copy_plaintext		; load code into RAM
+	call	print_plaintext		; print the plaintext
+
+	
+	movlw   0xC0        ; Move the cursor to the second line (or wherever needed)
+	call    LCD_Send_Byte_I
+	movlw	0x01	    ; allow time for cursor to move
 	call	LCD_delay_ms
 	
-	call    modify_table     
-	call	setup_ciphertext
-    	call	print_message
+	call measure_modify_table   ; Modify the ciphertext array and time it
 	
-	movlw	0xFF
-	call	LCD_delay_ms
-	movlw	0xFF
-	call	LCD_delay_ms
-	
-	goto	ending
-	
-setup_plaintext:
-	lfsr	0, PlaintextArray	; Load FSR0 with address in RAM	
-	movlw	low highword(PlaintextTable)	; address of data in PM
-	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
-	movlw	high(PlaintextTable)	; address of data in PM
-	movwf	TBLPTRH, A		; load high byte to TBLPTRH
-	movlw	low(PlaintextTable)	; address of data in PM
-	movwf	TBLPTRL, A		; load low byte to TBLPTRL
-	movlw	TableLength	; bytes to read
-	movwf 	counter_pt, A
-	return
-	
-setup_ciphertext:
-	lfsr	0, CiphertextArray	; Load FSR0 with address in RAM	
-	movlw	low highword(CiphertextTable)	; address of data in PM
-	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
-	movlw	high(CiphertextTable)	; address of data in PM
-	movwf	TBLPTRH, A		; load high byte to TBLPTRH
-	movlw	low(CiphertextTable)	; address of data in PM
-	movwf	TBLPTRL, A		; load low byte to TBLPTRL
-	movlw	TableLength	; bytes to read
-	movwf 	counter_pt, A
-	return
-		
-print_message: 	
-	tblrd*+			
-	movff	TABLAT, POSTINC0
-	movf	TABLAT, W, A
-	call	LCD_Send_Byte_D
-	decfsz	counter_pt, A
-	bra	print_message
-	movlw	0xC0
-	call LCD_Send_Byte_I
-	return
-	
-;modify_table:
-;	movf CiphertextArray, W, A
-;	movwf next_address, A
-;	call setup_plaintext
-;	
-;	goto modify_loop
-   
-;modify_loop:
-;	
-;	tblrd*+			    ; one byte from PM to TABLAT, increment TBLPRT
-;	movff	TABLAT, POSTINC0    ; move data from TABLAT to (FSR0), inc FSR0	
-;	movf	TABLAT, W, A
-;	movwf	next_address, A
-;	incf	next_address, A
-;	decfsz	counter_pt, A
-;	bra modify_loop
-;	
-;	return
-	
-modify_table:
-    call setup_ciphertext
 
-modify_loop:
-    tblrd*+              
-    movff   TABLAT, POSTINC0
-    movf    POSTINC0, W, A    
-    movf    TABLAT, W, A         
-    tblwt*+                
-    decfsz counter_ec, f, A   ; Decrement modification counter
-    bra modify_loop         ; Continue loop if not done
+	call print_ciphertext    ; Print the modified data to the LCD
+	
+	; add a space then print the timer values
+	movlw ' '
+	call LCD_Send_Byte_D 
+	movf timer_high, W, A
+	call LCD_Write_Hex
+	movf timer_low, W, A
+	call LCD_Write_Hex
 
-    return
+	; send the message from portF, portH
+	movlw 0xFF
+	movwf PORTH, A		; set clock pin high
+	call send_characters	; send the characters
+	movlw	0x00	
+	movwf PORTH, A		; set the clock pin low
+	
 
-
+	return 
+  
 ending:
     nop
-end
+    
+    end rst
     
 	
