@@ -1,7 +1,7 @@
 #include <xc.inc>
     
 global measure_modify_table
-extrn modify_table, timer_low, timer_high 
+extrn c_modify_table, timer_low, timer_high 
 
 psect	timer_code,class=CODE
 measure_modify_table:
@@ -14,7 +14,7 @@ measure_modify_table:
 	movwf   T1CON, A     ; Enable Timer1
 
 	; Step 3: Call modify_table
-	call    modify_table  ; Execute the function being measured
+	call    c_modify_table  ; Execute the function being measured
 
 	; Step 4: Stop Timer1
 	bcf     T1CON, 0, A     ; Disable Timer1 to freeze count

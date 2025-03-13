@@ -1,7 +1,7 @@
 #include <xc.inc>
 
-extrn CiphertextArray, PlaintextArray, TableLength, counter_pt, LCD_Send_Byte_D
-global print_plaintext, print_ciphertext, send_characters, copy_plaintext, PlaintextTable
+extrn CiphertextArray, PlaintextArray, TableLength, counter_pt, LCD_Send_Byte_D, KeyArray, counter_k, KeyTable
+global print_plaintext, print_ciphertext, send_characters, copy_plaintext, PlaintextTable, copy_key, KeyTable
     
 psect	print_code,class=CODE
 
@@ -50,7 +50,7 @@ send_loop:
     movf    counter_pt, W, A  
 
     movf    INDF0, W, A    ; Read a character from PlaintextArray
-    movwf   PORTD ; Send it to the LCD
+    movwf   PORTD, A ; Send it to the LCD
 
     incf    FSR0L, A       ; Move to the next character in PlaintextArray
     decfsz  counter_pt, A  
@@ -77,3 +77,23 @@ setup_loop:
 	bra	setup_loop	; keep going until finished
 	return
 
+copy_key:
+	lfsr	0, KeyArray	; Load FSR0 with address in RAM	
+	movlw	low highword(KeyTable)	; address of data in PM
+	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
+	movlw	high(KeyTable)	; address of data in PM
+	movwf	TBLPTRH, A		; load high byte to TBLPTRH
+	movlw	low(KeyTable)	; address of data in PM
+	movwf	TBLPTRL, A		; load low byte to TBLPTRL
+	movlw	TableLength	; bytes to read
+	movwf 	counter_k, A
+	goto setup_loop_key
+	
+setup_loop_key:
+	
+	movff	TABLAT, POSTINC1; move data from TABLAT to (FSR0), inc FSR0	
+	movf	TABLAT, W, A
+	decfsz	counter_pt, A		; count down to zero
+	bra	setup_loop	; keep going until finished
+	tblrd*+			; one byte from PM to TABLAT, increment TBLPRT
+	return
