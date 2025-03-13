@@ -1,11 +1,11 @@
 #include <xc.inc>
 ; Vigenere cipher
 extrn CiphertextArray, PlaintextArray, TableLength, counter_ec, KeyArray
-global modify_table
+global vig_modify_table
     
 psect	modify_code,class=CODE
     
-modify_table:
+vig_modify_table:
     ; Initialize FSR1 to point to PlaintextArray
     lfsr    0, PlaintextArray
     
@@ -19,30 +19,29 @@ modify_table:
     movlw   TableLength          ; Load the number of characters to process
     movwf   counter_ec, A        ; Store in counter_ec
     
-    goto    modify_loop          ; Start modification
+    goto    vig_modify_loop          ; Start modification
 
-modify_loop:
+vig_modify_loop:
     movf    counter_ec, W, A     ; Check if counter is zero
-    bz      modify_done          ; If zero, we are done
+    bz      vig_modify_done          ; If zero, we are done
 
     movlw   0x60 ; making 'a' shift = 1
-    subwf   POSTINC0, W
+    subwf   POSTINC0, W, A
 
-    addwf   POSTINC1, W    ; Add the key
-
-    cpfslt  'z'                 ; Compare WREG with 'z'
+    addwf   POSTINC1, W, A    ; Add the key
+    cpfslt  'z', B               ; Compare WREG with 'z'
     
     ;btfss   STATUS, 2, A            ; If greater, it's out of range
-    bra     wrap_done            ; If no wrap, skip
+    bra     vig_wrap_done            ; If no wrap, skip
     
     ; if greater then subtract 26 = 0x1A
     ; Subtract 0x1A to wrap around
     sublw   0x1A                 ; Subtract 'z' - 'a' (26)
     
-wrap_done:    
+vig_wrap_done:    
     movwf   POSTINC2, A         ; Write encrypted character to CiphertextArray
     decfsz  counter_ec, A        ; Decrement counter and check if done
-    bra     modify_loop          ; Loop again if not finished
+    bra     vig_modify_loop          ; Loop again if not finished
 
-modify_done:
+vig_modify_done:
     return
