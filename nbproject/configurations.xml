@@ -22,6 +22,8 @@
       <itemPath>LCD.s</itemPath>
       <itemPath>make_ciphertext.s</itemPath>
       <itemPath>printing.s</itemPath>
+      <itemPath>Vigenere_cipher.s</itemPath>
+      <itemPath>fatiha_main.s</itemPath>
     </logicalFolder>
   </logicalFolder>
   <sourceRootList>
