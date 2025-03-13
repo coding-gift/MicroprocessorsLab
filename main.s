@@ -25,15 +25,15 @@ KeyArray:	    ds 0x50
     
 psect	data    
 PlaintextTable:
-	db	'H','e','l','l','o',' ', 'w','o','r','l','d'				
-	TableLength   EQU	11
+	db	'l','e','l','l','o',' ', 'a','b','c','c'				
+	TableLength   EQU	10
 
 	align	2
 
 	psect key_data, class=CODE
 KeyTable:
-	db 'a','b','c','a','b','c','a','b','c', 'a', 'b'   ; Define the keyword "key"
-	KeyLength   EQU		11	
+	db 'l','b','g','a','b','c','a','k','l', 't'  ; Define the keyword "key"
+	KeyLength   EQU		10
 	align	2
 	
 psect	code, abs
@@ -47,6 +47,7 @@ setup:	bcf	CFGS		; point to Flash program memory
 	goto	start
 
 start:
+	; call caesar_func
 	call vigenere_func
 	goto	$
 	
@@ -64,7 +65,7 @@ decode_setup:
 	movlw	0xFF
 	movwf	TRISH, A	; setup clock pin input
 	movwf	TRISD, A	; set up message input
-	
+	return
 
 caesar_func:
 	call	copy_plaintext		; load code into RAM

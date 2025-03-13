@@ -28,12 +28,9 @@ vig_modify_loop:
     addwf   POSTINC1, W, A    ; Add the key
     cpfslt  'z', B               ; Compare WREG with 'z'
     
-    ;btfss   STATUS, 2, A            ; If greater, it's out of range
+    btfss   STATUS, 2, A            ; If greater, it's out of range
     bra     vig_wrap_done            ; If no wrap, skip
-    
-    ; if greater then subtract 26 = 0x1A
-    ; Subtract 0x1A to wrap around
-    sublw   0x1A                 ; Subtract 'z' - 'a' (26)
+    sublw   0x1A                 ; Subtract 'z' o make it within alphabet
     
 vig_wrap_done:    
     movwf   POSTINC2, A         ; Write encrypted character to CiphertextArray
