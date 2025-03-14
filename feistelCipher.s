@@ -1,59 +1,46 @@
 #include <xc.inc>
-; Feistel Cipher
-extrn CiphertextArray, PlaintextArray, TableLength, counter_ec, KeyArray
+
+extrn CiphertextArray, PlaintextArray, KeyArray
+extrn TableLength, counter_ec
 global feistel_encrypt
 
-psect udata_acs
-    temp_maths: ds 1
-    left_half: ds 1
-    right_half: ds 1
-    round_key: ds 1
-    rounds: ds 1
-
-psect modify_code, class=CODE
+psect	udata_acs   ; reserve data space in access ram
+temp_left:	ds 1    ; counter for printing the initial data
+temp_right:	ds 1	; encoding counter
+;counter_k:	ds 1	; counter for copying the key
+    
+psect feistel_code, class=CODE
 
 feistel_encrypt:
-    lfsr 0, PlaintextArray  ; Load PlaintextArray into FSR0
-    lfsr 1, KeyArray        ; Load KeyArray into FSR1
-    lfsr 2, CiphertextArray ; Load CiphertextArray into FSR2
+    ;Initialize FSRs for data pointers
+    lfsr    0, PlaintextArray    ; FSR0 -> PlaintextArray (Left Half)
+    lfsr    1, KeyArray          ; FSR1 -> KeyArray
+    lfsr    2, CiphertextArray   ; FSR2 -> CiphertextArray (Output)
+    
+    movlw   TableLength          ; Load the number of characters to process
+    movwf   counter_ec, A        ; Store in counter_ec
+    
+    bra     feistel_loop         ; Start encryption rounds
 
-    movlw  TableLength
-    movwf  counter_ec, A    ; Counter for characters
+feistel_loop:
+    movf    counter_ec, W, A     ; Check if rounds are finished
+    bz      feistel_done         ; If zero, we are done
 
-    movlw  4               ; Number of rounds
-    movwf  rounds, A
+    movf    POSTINC0, W, A       ; Load Left Half (L) ; need to the first thalf
+    andwf   0b11110000
+;    movwf   temp_left, A         ; Store in temp register (L)
+;
+;    movf    POSTINC0, W, A       ; Load Right Half (R)
+;
+;    xorwf   POSTINC1, W, A       ; F(R, Key) = R ? Key
+;    xorwf   temp_left, W, A      ; New Right = L ? F(R, Key)
+;    movwf   POSTINC2, A          ; Store new Right Half in CiphertextArray
+;
+;    movf    temp_left, W, A      ; Retrieve original Left Half
+    movwf   POSTINC2, A          ; Store as new Left Half
 
-encrypt_loop:
-    movf   counter_ec, W, A
-    bz     encrypt_done
+    decfsz  counter_ec, A        ; Decrement round counter
+    bra     feistel_loop         ; Repeat for next round
 
-    movf   POSTINC0, W      ; Read plaintext character
-    movwf  left_half        ; Store in left_half
-
-    movf   POSTINC1, W      ; Read key character
-    movwf  round_key        ; Store as round key
-
-    movf   left_half, W
-    movwf  right_half       ; Initialize right_half = left_half
-
-    ; Start Feistel rounds
-    movf   rounds, W
-    movwf  temp_maths
-
-rounds_loop:
-    movf   round_key, W     ; Load round key
-    xorwf  right_half, W    ; F-function: simple XOR
-    movwf  left_half        ; L(i+1) = R(i)
-    movwf  right_half       ; Swap halves
-
-    decfsz temp_maths, A
-    bra    rounds_loop
-
-    movf   right_half, W
-    movwf  POSTINC2, A      ; Store encrypted char in CiphertextArray
-
-    decfsz counter_ec, A
-    bra    encrypt_loop
-
-encrypt_done:
+feistel_done:
     return

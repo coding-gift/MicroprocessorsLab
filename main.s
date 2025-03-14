@@ -1,75 +1,107 @@
 #include <xc.inc>
 
-extrn	UART_Setup, UART_Transmit_Message  ; external subroutines
-extrn	LCD_Setup, LCD_Write_Message, LCD_Send_Byte_D
-	
-psect	udata_acs   ; reserve data space in access ram
-counter:    ds 1    ; reserve one byte for a counter variable
-delay_count:ds 1    ; reserve one byte for counter in the delay routine
-    
-psect	udata_bank4 ; reserve data anywhere in RAM (here at 0x400)
-myArray:    ds 0x80 ; reserve 128 bytes for message data
+global CiphertextArray, PlaintextArray, TableLength, counter_pt, counter_ec, KeyArray
 
-psect	data    
-	; ******* myTable, data in programme memory, and its length *****
-myTable:
-	db	'H','e','l','l','o',' ','W','o','r','l','d','!',0x0a
-					; message, plus carriage return
-	myTable_l   EQU	13	; length of data
-	align	2
-    
-psect	code, abs	
-rst: 	org 0x0
- 	goto	setup
+extrn LCD_Setup, LCD_Write_Message, LCD_Write_Hex, LCD_Send_Byte_I, LCD_delay_ms, LCD_Send_Byte_D
+extrn print_plaintext, print_ciphertext   
+extrn feistel_encrypt
 
-	; ******* Programme FLASH read Setup Code ***********************
-setup:	bcf	CFGS	; point to Flash program memory  
-	bsf	EEPGD 	; access Flash program memory
-	call	UART_Setup	; setup UART
-	call	LCD_Setup	; setup UART
-	goto	start
-	
-	; ******* Main programme ****************************************
-start: 	lfsr	0, myArray	; Load FSR0 with address in RAM	
-	movlw	low highword(myTable)	; address of data in PM
-	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
-	movlw	high(myTable)	; address of data in PM
-	movwf	TBLPTRH, A		; load high byte to TBLPTRH
-	movlw	low(myTable)	; address of data in PM
-	movwf	TBLPTRL, A		; load low byte to TBLPTRL
-	movlw	myTable_l	; bytes to read
-	movwf 	counter, A		; our counter register
-loop: 	tblrd*+			; one byte from PM to TABLAT, increment TBLPRT
-	movff	TABLAT, POSTINC0; move data from TABLAT to (FSR0), inc FSR0	
-	decfsz	counter, A		; count down to zero
-	bra	loop		; keep going until finished
-	
-	movlw	myTable_l	; output message to LCD
-	addlw	0xff		; don't send the final carriage return to LCD
-	lfsr	2, myArray
-	call	LCD_Write_Message
-	
-	movlw	myTable_l	; output message to UART
-	lfsr	2, myArray
-	call	UART_Transmit_Message
-	
-	movlw	myTable_l	; output message to LCD
-	addlw	0xff		; don't send the final carriage return to LCD
-	lfsr	2, myArray
-	call	LCD_Write_Message
+psect udata_acs   ; reserve data space in access RAM
+counter_pt: ds 1    ; counter for printing the initial data
+counter_ec: ds 1    ; encoding counter
+counter_k: ds 1    ; counter for copying the key
 
+psect udata_bank3 ; reserve data in Bank3
+PlaintextArray:    ds 0x80 ; reserve 128 bytes for message data
+CiphertextArray:   ds 0x80 ; reserve 128 bytes for modified message data
 
-read_loop:
-	btfss	RC1IF
-	bra	read_loop
-	movf	RCREG1, W, A
-	call	LCD_Send_Byte_D
-	bcf	RC1IF
-	goto	read_loop		; goto current line in code
+psect udata_bank4 ; reserve data in Bank4
+KeyArray:          ds 0x80 ; reserve 128 bytes for the KeyArray
 
-	; a delay subroutine if you need one, times around loop in delay_count
-delay:	decfsz	delay_count, A	; decrement until zero
-	bra	delay
-	return
+psect data    
+; ******* Plaintext and Key Data in program memory *****
+PlaintextTable:
+    db 'h','e','l','l','o','w','o','r','l','d'                   
+    TableLength   EQU 10    
+    align 2
 
-	end	rst
+psect key_data, class=CODE
+KeyTable:
+    db 'k','e','y','k','e','y','k','e','y','k'   ; Define the key
+    KeyLength   EQU 10   
+    align 2
+
+psect code, abs
+rst:    org 0x0
+	goto setup
+
+; ******* Program Setup Code ***********************
+setup:    
+    bcf	    CFGS    ; point to Flash program memory  
+    bsf	    EEPGD   ; access Flash program memory
+    call    LCD_Setup    ; setup LCD
+    movlw   0x00
+    movwf   TRISH, A
+    movlw   0x00
+    movwf   PORTH, A
+    goto    start
+
+start:
+    call    copy_plaintext    ; Load plaintext from Flash to RAM
+    call    copy_key          ; Load key from Flash to RAM
+    call    print_plaintext   ; Print the plaintext on LCD
+
+    movlw   0xC0            ; Move cursor to the second line for ciphertext
+    call    LCD_Send_Byte_I
+    movlw   0x01            ; Allow time for cursor to move
+    call    LCD_delay_ms
+
+    call    feistel_encrypt  ; Perform Feistel encryption
+
+    call    print_ciphertext ; Print ciphertext to LCD
+
+    goto    $
+
+copy_plaintext:
+    lfsr    0, PlaintextArray   ; Load FSR0 with address in RAM    
+    movlw   low highword(PlaintextTable)
+    movwf   TBLPTRU, A
+    movlw   high(PlaintextTable)
+    movwf   TBLPTRH, A
+    movlw   low(PlaintextTable)
+    movwf   TBLPTRL, A
+    movlw   TableLength
+    movwf   counter_pt, A
+    goto    setup_loop
+
+copy_key:
+    lfsr    1, KeyArray
+    movlw   low highword(KeyTable)
+    movwf   TBLPTRU, A
+    movlw   high(KeyTable)
+    movwf   TBLPTRH, A
+    movlw   low(KeyTable)
+    movwf   TBLPTRL, A
+    movlw   KeyLength
+    movwf   counter_k, A
+    goto    setup_loop_key
+
+setup_loop:
+    tblrd*+            ; Read one byte from program memory
+    movff TABLAT, POSTINC0  ; Move data to RAM
+    movf TABLAT, W, A
+    decfsz counter_pt, A
+    bra setup_loop
+    return
+
+setup_loop_key:
+    tblrd*+
+    movff   TABLAT, POSTINC1
+    movf    TABLAT, W, A
+    decfsz  counter_k, A
+    bra	    setup_loop_key
+    return
+
+ending:
+    nop
+end rst
