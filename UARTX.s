@@ -7,17 +7,21 @@ UART_counter: ds    1	    ; reserve 1 byte for variable UART_counter
 
 psect	uart_code,class=CODE
 UART_Setup:
-    movlb   15
+    movlb   15		; Bank select register
+    bcf	    ANSEL18
     bsf	    SPEN2	; enable
-    bcf	    SYNC2	; synchronous
+    bcf	    SYNC2	; asynchronous
     bcf	    BRGH2	; slow speed
     bsf	    TXEN2	; enable transmit
     bsf	    CREN2	; enable receive
     bcf	    BRG162	; 8-bit generator only
     movlw   103		; gives 9600 Baud rate (actually 9615)
     movwf   SPBRG2, B	; set baud rate
-    bsf	    TRISG, PORTG_TX2_POSN, A	; TX1 pin is output on RC6 pin
-					; must set TRISC6 to 1
+    clrf    LATG, A
+    bsf	    TRISG, 2, A	; TX2 pin is output on RG1 pin
+					; must set TRISG1 to 1
+    bsf	    TRISG, 1, A	; TX2 pin is output on RG1 pin
+					; must set TRISG1 to 1
     movlb   0
     return
 
@@ -32,9 +36,9 @@ UART_Loop_message:
 
 UART_Transmit_Byte:	    ; Transmits byte stored in W
     movlb   15
-    btfss   TX2IF	    ; TX1IF is set when TXREG1 is empty
+    btfss   TX2IF	    ; TX2IF is set when TXREG2 is empty
     bra	    UART_Transmit_Byte
-    movwf   TXREG2, A
+    movwf   TXREG2, B
     movlb   0
     return
 
