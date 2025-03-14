@@ -20,11 +20,18 @@
       <itemPath>main.s</itemPath>
       <itemPath>config.s</itemPath>
       <itemPath>LCD.s</itemPath>
+<<<<<<< Updated upstream
       <itemPath>print.s.s</itemPath>
       <itemPath>feistelCipher.s</itemPath>
       <itemPath>LCDx.s</itemPath>
       <itemPath>UART.s</itemPath>
       <itemPath>mainX.s</itemPath>
+=======
+      <itemPath>caesar.s</itemPath>
+      <itemPath>vigenere.s</itemPath>
+      <itemPath>output.s</itemPath>
+      <itemPath>timer.s</itemPath>
+>>>>>>> Stashed changes
     </logicalFolder>
   </logicalFolder>
   <sourceRootList>
