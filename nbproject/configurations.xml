@@ -19,12 +19,8 @@
                    projectFiles="true">
       <itemPath>main.s</itemPath>
       <itemPath>config.s</itemPath>
-      <itemPath>LCD.s</itemPath>
-      <itemPath>print.s.s</itemPath>
-      <itemPath>feistelCipher.s</itemPath>
       <itemPath>LCDx.s</itemPath>
-      <itemPath>UART.s</itemPath>
-      <itemPath>mainX.s</itemPath>
+      <itemPath>UARTX.s</itemPath>
     </logicalFolder>
   </logicalFolder>
   <sourceRootList>
@@ -567,7 +563,7 @@
         <property key="debugoptions.debug-startup" value="Use system settings"/>
         <property key="debugoptions.reset-behaviour" value="Use system settings"/>
         <property key="debugoptions.simultaneous.debug" value="false"/>
-        <property key="debugoptions.useswbreakpoints" value="false"/>
+        <property key="debugoptions.useswbreakpoints" value="true"/>
         <property key="event.recorder.debugger.behavior" value="Running"/>
         <property key="event.recorder.enabled" value="false"/>
         <property key="event.recorder.scvd.files" value=""/>
@@ -1159,8 +1155,6 @@
         <property key="memories.programmemory" value="true"/>
         <property key="memories.programmemory.ranges" value="0-1ffff"/>
         <property key="poweroptions.powerenable" value="false"/>
-        <property key="programmerToGoFilePath"
-                  value="C:/Users/ft222/OneDrive - Imperial College London/Encryption_Project_Microprocressor/MicroprocessorsLab-master/MicroprocessorsLab-master/EncryptionProject.X/debug/default/EncryptionProject_ptg"/>
         <property key="programmerToGoImageName" value="EncryptionProject_ptg"/>
         <property key="programoptions.donoteraseauxmem" value="false"/>
         <property key="programoptions.eraseb4program" value="true"/>
