@@ -4,7 +4,7 @@ global CiphertextArray, PlaintextArray, TableLength, counter_pt, counter_ec, Key
     
 extrn LCD_Setup, LCD_Write_Message, LCD_Write_Hex, LCD_Send_Byte_I, LCD_delay_ms, LCD_Send_Byte_D
 extrn print_plaintext, print_ciphertext   
-extrn feistel_encrypt
+extrn feistel_decrypt
     
 psect	udata_acs   ; reserve data space in access ram
 counter_pt:	ds 1    ; counter for printing the initial data
@@ -22,7 +22,7 @@ KeyArray:          ds 0x80 ; reserve 128 bytes for the KeyArray
 psect	data    
 	; ******* myTable, data in programme memory, and its length *****
 PlaintextTable:
-	db	'a', 'b', 'c', 'd' ;'p','l','a','i','n','t','e','x','t'
+	db	'c', 'd', 'g', 0x60 ;'p','l','a','i','n','t','e','x','t'
 
 	TableLength	EQU	    4
 	align 2
@@ -58,7 +58,7 @@ start:
 	movlw	0x01	    ; allow time for cursor to move
 	call	LCD_delay_ms
 	
-	call	feistel_encrypt        ; Modify the ciphertext array
+	call	feistel_decrypt        ; Modify the ciphertext array
 	call	print_ciphertext    ; Print the modified data to the LCD
 	
 	goto	$
