@@ -35,10 +35,13 @@ feistel_loop:
     movf    POSTINC1, W, A       ; Load Key
     xorwf   temp_right, W, A     ; F(R, Key) = R ? Key
     xorwf   temp_left, W, A      ; New Right = L ? F(R, Key)
+    movwf   temp_left, A
     
-    movwf   POSTINC2, A          ; Store New Right in CiphertextArray
     movf    temp_right, W, A     ; Move Old R to be the new Left
     movwf   POSTINC2, A
+    
+    movf    temp_left, W, A
+    movwf   POSTINC2, A          ; Store New Right in CiphertextArray
 
     decfsz  counter_ec, A        ; Decrement round counter
     bra     feistel_loop         ; Repeat for next round
