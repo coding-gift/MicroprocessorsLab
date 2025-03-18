@@ -1,0 +1,14 @@
+10112 1741966554693 XXXX 1741966554693, Thread 10112: ToolCommUsb::read, com.Received returned -1 
+10112 1741966554693 XXXX 1741966554693, Thread 10112: transfer: exception after writeHeaderAndGetResult null 
+10112 1741966554693 XXXX 1741966554693, Thread 10112: XXXX 1741966554693, Entering Thread 10112: ToolCommUsb::recoverFromProtocolError, type = NO_SCRIPT  
+10112 1741966554693 XXXX 1741966554693, Thread 10112: Send Abort Script Engine Command 
+10112 1741966554693 XXXX 1741966554693, Thread 10112: XXXX 1741966554693, Entering Thread 10112: ToolCommUsb::killScriptEngine  
+10112 1741966564695 XXXX 1741966564695, Thread 10112: ToolCommUsb::read, com.Received returned -1 
+10112 1741966564695 XXXX 1741966564695, Thread 10112: Failed sending Abort Script Engine Command. Set nuclear option = true 
+10112 1741966564695 XXXX 1741966564695, Thread 10112: About to nuke 
+10112 1741966564695 XXXX 1741966564695, Thread 10112: XXXX 1741966564695, Entering Thread 10112: ToolCommUsb::nuclearOption  
+10112 1741966564695 XXXX 1741966564695, Thread 10112: XXXX 1741966564695, Exiting Thread 10112: ToolCommUsb::nuclearOption  
+10112 1741966564695 XXXX 1741966564695, Thread 10112: After nuking 
+10112 1741966564695 XXXX 1741966564695, Thread 10112: Exiting recoverFromProtocolError 
+10112 1741966564695 XXXX 1741966564695, Thread 10112: XXXX 1741966564695, Exiting Thread 10112: ToolCommUsb::recoverFromProtocolError,  
+10112 1741966564695 XXXX 1741966564695, Thread 10112: transfer: after recoverFromProtocolError 
