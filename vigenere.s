@@ -1,5 +1,4 @@
 #include <xc.inc>
-; Vigenere cipher
 extrn CiphertextArray, PlaintextArray, TableLength, counter_ec, KeyArray
 global vig_modify_table
     

@@ -10,7 +10,6 @@ c_modify_table:
     movwf   FSR1L, A
     movlw   HIGH(PlaintextArray) ; Load high byte of PlaintextArray address
     movwf   FSR1H, A
-
     movlw   LOW(CiphertextArray) ; Load low byte of CiphertextArray address
     movwf   FSR0L, A
     movlw   HIGH(CiphertextArray); Load high byte of CiphertextArray address
@@ -24,11 +23,9 @@ c_modify_table:
 c_modify_loop:
     movf    counter_ec, W, A     ; Check if counter is zero
     bz      c_modify_done          ; If zero, we are done
-
     movf    INDF1, W, A          ; Read character from PlaintextArray into w
     
-    addlw   0x01	 ; CAESAR CIPHER!
-    ; call encoding alorithm here!
+    addlw   0x05	 ; CAESAR CIPHER!
     
     movwf   INDF0, A             ; Write character to CiphertextArray
     incf    FSR1L, A             ; Increment FSR1 (next character in PlaintextArray)
