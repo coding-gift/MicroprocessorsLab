@@ -1,10 +1,9 @@
-
 #include <xc.inc>
 global CiphertextArray, PlaintextArray, TableLength, counter_pt, counter_ec, KeyArray
     
 extrn LCD_Setup, LCD_Write_Message, LCD_Write_Hex, LCD_Send_Byte_I, LCD_delay_ms, LCD_Send_Byte_D
 extrn print_plaintext, print_ciphertext   
-extrn vig_modify_table
+extrn vig_encrypt, vig_decrypt
     
 psect	udata_acs   ; reserve data space in access ram
 counter_pt:	ds 1    ; counter for printing the initial data
@@ -21,7 +20,8 @@ KeyArray:          ds 0x80 ; reserve 128 bytes for the KeyArray
 psect	data    
 	; ******* myTable, data in programme memory, and its length *****
 PlaintextTable:
-	db	'p','l','a','i','n','t','e','x','t'
+	;db  'p','l','a','i','n','t','e','x','t'
+	db	'q', 'n', 'd', 'j', 'p', 'w','f','z','w'	
 					
 	TableLength   EQU	9	
 	align	2
@@ -48,21 +48,21 @@ setup:	bcf	CFGS	; point to Flash program memory
 start:
 	call	copy_plaintext		; Load plaintext from Flash to RAM
 	call	copy_key            ; Load key from Flash to RAM  <-- ADD THIS
-	call	print_plaintext		; Print the plaintext
+	call	print_ciphertext		; Print the plaintext
 	
 	movlw   0xC0        ; Move the cursor to the second line (or wherever needed)
 	call    LCD_Send_Byte_I
 	movlw	0x01	    ; allow time for cursor to move
 	call	LCD_delay_ms
 	
-	call vig_modify_table        ; Modify the ciphertext array
+	call	vig_decrypt        ; Modify the ciphertext array
 	
-	call print_ciphertext    ; Print the modified data to the LCD
+	call print_plaintext    ; Print the modified data to the LCD
 	
 	goto	$
 
 copy_plaintext:
-	lfsr	0, PlaintextArray	; Load FSR0 with address in RAM	
+	lfsr	0, CiphertextArray	; Load FSR0 with address in RAM	
 	movlw	low highword(PlaintextTable)	; address of data in PM
 	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
 	movlw	high(PlaintextTable)	; address of data in PM
