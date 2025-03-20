@@ -2,12 +2,15 @@
 #include <xc.inc>
 
 #include <xc.inc>
-global CiphertextArray, PlaintextArray, TableLength, counter_pt, counter_ec, timer_low, timer_high, PlaintextTable, KeyArray, counter_k, KeyTable
+global CiphertextArray, PlaintextArray, DecryptedArray,  TableLength, counter_pt, counter_ec, timer_low, timer_high, PlaintextTable, KeyArray, counter_k, KeyTable, char, char_low, char_high
+
 extrn LCD_Setup, LCD_Write_Message, LCD_Write_Hex, LCD_Send_Byte_I, LCD_delay_ms, LCD_Send_Byte_D
 extrn print_plaintext, print_ciphertext,  send_characters, copy_plaintext, copy_key
 extrn c_modify_table
 extrn measure_modify_table
 extrn vig_modify_table
+extrn initialise_rsa, encrypt, encoded_low, encoded_high, rsa_print_ciphertext, decrypt, decoded, rsa_decode_table, print_timer
+
 
 psect	udata_acs		; reserve data space in access ram
 counter_pt:	ds 1		; counter for printing the initial data
@@ -16,17 +19,21 @@ counter_k:	ds 1	; counter for copying the key
 timer_low:	ds 1		; Store low byte of Timer1
 timer_high:	ds 1		; Store high byte of Timer1
 clock_pin:	ds 1
+char:		ds 1
+char_low:	ds 1
+char_high:	ds 1
     
 psect	udata_bank4		; reserve data anywhere in RAM (here at 0x400)
-PlaintextArray:	    ds 0x50	; reserve 128 bytes for message data
-CiphertextArray:    ds 0x50	; reserve 128 bytes for modified message data
-KeyArray:	    ds 0x50
+PlaintextArray:	    ds 0x30	; reserve 128 bytes for message data
+CiphertextArray:    ds 0x30	; reserve 128 bytes for modified message data
+KeyArray:	    ds 0x30
+DecryptedArray:	    ds 0x30
 
     
 psect	data    
 PlaintextTable:
-	db	'l','e','l','l','o',' ', 'a','b','c','c'				
-	TableLength   EQU	10
+	db	'a','b','c','d','e', 'f','g','h', 'i', 'j'				
+	TableLength   EQU	3
 
 	align	2
 
@@ -44,11 +51,13 @@ setup:	bcf	CFGS		; point to Flash program memory
 	bsf	EEPGD		; access Flash program memory
 	call	LCD_Setup	; setup LCD
 	call	encode_setup
+	call	initialise_rsa
 	goto	start
 
 start:
-	; call caesar_func
-	call vigenere_func
+	;call caesar_func
+	;call vigenere_func
+	call rsa_encoding_func
 	goto	$
 	
 
@@ -82,20 +91,7 @@ caesar_func:
 
 	call print_ciphertext    ; Print the modified data to the LCD
 	
-	; add a space then print the timer values
-	movlw ' '
-	call LCD_Send_Byte_D 
-	movf timer_high, W, A
-	call LCD_Write_Hex
-	movf timer_low, W, A
-	call LCD_Write_Hex
-
-	; send the message from portF, portH
-	movlw 0xFF
-	movwf PORTH, A		; set clock pin high
-	call send_characters	; send the characters
-	movlw	0x00	
-	movwf PORTH, A		; set the clock pin low
+	call print_timer
 
 	return 
 
@@ -109,13 +105,39 @@ vigenere_func:
 	movlw	0x01	    ; allow time for cursor to move
 	call	LCD_delay_ms
 	
-	call vig_modify_table        ; Modify the ciphertext array
+	call measure_modify_table        ; Modify the ciphertext array
 	
 	call print_ciphertext    ; Print the modified data to the LCD
+	
+	call print_timer
+	
+	return
   
+rsa_encoding_func:
+    call	copy_plaintext		; load code into RAM
+    call	print_plaintext		; print the plaintext
+    
+    call measure_modify_table
+    
+    call rsa_print_ciphertext
+    
+    call print_timer
+    
+    ; encode the data here and print the encoded value
+    return
+    
+rsa_decoding_func:
+    movlw 0x84
+    call LCD_Send_Byte_I
+    movlw 0x01
+    call LCD_delay_ms
+    
+    call rsa_decode_table
+    return	
+	
+	
 ending:
     nop
     
     end rst
     
-	

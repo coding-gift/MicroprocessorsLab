@@ -17,8 +17,10 @@
       <itemPath>LCD.s</itemPath>
       <itemPath>timer.s</itemPath>
       <itemPath>output.s</itemPath>
-      <itemPath>vigenere.s</itemPath>
       <itemPath>caesar.s</itemPath>
+      <itemPath>vigenere.s</itemPath>
+      <itemPath>maths.s</itemPath>
+      <itemPath>rsa.s</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
