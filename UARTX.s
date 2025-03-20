@@ -18,8 +18,8 @@ UART_Setup:
     movlw   103		; gives 9600 Baud rate (actually 9615)
     movwf   SPBRG2, B	; set baud rate
     clrf    LATG, A
-    bsf	    TRISG, 2, A	; TX2 pin is output on RG1 pin
-					; must set TRISG1 to 1
+;    bsf	    TRISG, 2, A	; TX2 pin is input on RG2 pin
+					; must set TRISG2 to 1
     bsf	    TRISG, 1, A	; TX2 pin is output on RG1 pin
 					; must set TRISG1 to 1
     movlb   0

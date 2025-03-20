@@ -21,6 +21,9 @@
       <itemPath>config.s</itemPath>
       <itemPath>LCDx.s</itemPath>
       <itemPath>UARTX.s</itemPath>
+      <itemPath>feistelCipher.s</itemPath>
+      <itemPath>feistelDecrypt.s</itemPath>
+      <itemPath>printing.s</itemPath>
     </logicalFolder>
   </logicalFolder>
   <sourceRootList>
