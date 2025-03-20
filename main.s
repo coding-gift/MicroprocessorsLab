@@ -8,6 +8,7 @@ extrn LCD_Setup, LCD_Write_Hex, LCD_Send_Byte_I, LCD_delay_ms, LCD_Send_Byte_D
 extrn print_plaintext, print_ciphertext, send_characters, copy_plaintext, copy_key
 extrn c_modify_table, measure_modify_table, vig_modify_table
 extrn initialise_rsa, encrypt, encoded_low, encoded_high, rsa_print_ciphertext, decrypt, decoded, rsa_decode_table, print_timer
+extrn UART_Setup, UART_Transmit_Message
 
 
 psect	udata_acs		; reserve data space in access ram
@@ -30,8 +31,8 @@ DecryptedArray:	    ds 0x30
     
 psect	data    
 PlaintextTable:
-	db	'H','b','H','d','e', 'f','g','h', 'i', 'j'				
-	TableLength   EQU	6
+	db	'a','b','c','Z'				
+	TableLength   EQU	4
 
 	align	2
 
@@ -55,6 +56,9 @@ start:
 	;call caesar_func
 	;call vigenere_func
 	call	rsa_encoding_func
+	lfsr	2,CiphertextArray
+	movf	TableLength, W, A
+	call	UART_Transmit_Message
 	goto	$
 	
 
