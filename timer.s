@@ -1,6 +1,6 @@
 #include <xc.inc>
     
-global measure_modify_table, overflow_count, print_timer
+global measure_modify_table, overflow_count, print_timer, feistel_modify_table
 extrn c_modify_table, timer_low, timer_high, rsa_modify_table, vig_modify_table,LCD_Send_Byte_I, LCD_Send_Byte_I, LCD_Write_Hex, LCD_delay_ms,LCD_Send_Byte_D
     
 psect udata_acs
@@ -20,10 +20,13 @@ measure_modify_table:
 	;call    c_modify_table  ; Execute the function being measured
 	
 	; RSA
-	call	rsa_modify_table
+	;call	rsa_modify_table
 	
 	; VIGENERE CIPHER
 	;call	vig_modify_table
+	
+	; FEISTEL
+	call feistel_modify_table
 
 
 	bcf     T1CON, 0, A    

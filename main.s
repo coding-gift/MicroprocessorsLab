@@ -38,8 +38,8 @@ PlaintextTable:
 
 	psect key_data, class=CODE
 KeyTable:
-	db 'l','b','g','a','b','c','a','k','l', 't'  ; Define the keyword "key"
-	KeyLength   EQU		10
+	db 'e','f','g','a','b','c','a','k','l', 't'  ; Define the keyword "key"
+	KeyLength   EQU		2
 	align	2
 	
 psect	code, abs
@@ -49,18 +49,17 @@ rst:	org 0x0
 setup:	bcf	CFGS		; point to Flash program memory  
 	bsf	EEPGD		; access Flash program memory
 	call	LCD_Setup	; setup LCD
+	call	UART_Setup
 	call	initialise_rsa
 	goto	start
 
 start:
 	;call caesar_func
 	;call vigenere_func
-	call	rsa_encoding_func
-	lfsr	2,CiphertextArray
-	movf	TableLength, W, A
-	call	UART_Transmit_Message
+	;call	rsa_encoding_func
+	call	feistel_func
+	call	send_message
 	goto	$
-	
 
 caesar_func:
 	call	copy_plaintext		; load code into RAM
@@ -111,8 +110,26 @@ rsa_decoding_func:
     
 	call	rsa_decode_table
 	return	
+
+feistel_func:	
+	call	copy_plaintext
+	call	print_plaintext
+	call	copy_key            ; Load key from Flash to RAM  <-- ADD THIS
 	
+	movlw   0xC0        ; Move the cursor to the second line (or wherever needed)
+	call    LCD_Send_Byte_I
+	movlw	0x01	    ; allow time for cursor to move
+	call	LCD_delay_ms
 	
+	call measure_modify_table
+	call print_ciphertext
+	call print_timer
+
+
+send_message:	
+	lfsr	2,CiphertextArray
+	movf	TableLength, W, A
+	call	UART_Transmit_Message
 ending:
     nop
     

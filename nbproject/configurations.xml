@@ -22,6 +22,7 @@
       <itemPath>maths.s</itemPath>
       <itemPath>rsa.s</itemPath>
       <itemPath>UART.s</itemPath>
+      <itemPath>feistel.s</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
