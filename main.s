@@ -2,14 +2,12 @@
 #include <xc.inc>
 
 #include <xc.inc>
-global CiphertextArray, PlaintextArray, DecryptedArray,  TableLength, counter_pt, counter_ec, timer_low, timer_high, PlaintextTable, KeyArray, counter_k, KeyTable, char, char_low, char_high
-
+global CiphertextArray, PlaintextArray, DecryptedArray,  TableLength, counter_pt, counter_ec, timer_low, timer_high, PlaintextTable, KeyArray, counter_k, KeyTable, char, char_low, char_high, key_length
 extrn LCD_Setup, LCD_Write_Hex, LCD_Send_Byte_I, LCD_delay_ms, LCD_Send_Byte_D
 extrn print_plaintext, print_ciphertext, send_characters, copy_plaintext, copy_key
 extrn c_modify_table, measure_modify_table, vig_modify_table
 extrn initialise_rsa, encrypt, encoded_low, encoded_high, rsa_print_ciphertext, decrypt, decoded, rsa_decode_table, print_timer
 extrn UART_Setup, UART_Transmit_Message
-
 
 psect	udata_acs		; reserve data space in access ram
 counter_pt:	    ds 1		; counter for printing the initial data
@@ -21,6 +19,7 @@ clock_pin:	    ds 1
 char:		    ds 1
 char_low:	    ds 1
 char_high:	    ds 1
+key_length:	    ds 1
     
 psect	udata_bank4		; reserve data anywhere in RAM (here at 0x400)
 PlaintextArray:	    ds 0x30	; reserve 128 bytes for message data
@@ -31,15 +30,15 @@ DecryptedArray:	    ds 0x30
     
 psect	data    
 PlaintextTable:
-	db	'a','b','c','Z'				
-	TableLength   EQU	4
+	db	'a','b','c','d'	
+	TableLength   EQU	0x04
 
 	align	2
 
 	psect key_data, class=CODE
 KeyTable:
-	db 'e','f','g','a','b','c','a','k','l', 't'  ; Define the keyword "key"
-	KeyLength   EQU		2
+	db 'a','b','c' 
+	KeyLength   EQU		0x03
 	align	2
 	
 psect	code, abs
@@ -54,10 +53,10 @@ setup:	bcf	CFGS		; point to Flash program memory
 	goto	start
 
 start:
-	;call caesar_func
-	;call vigenere_func
+	;call   caesar_func
+	call    vigenere_func
 	;call	rsa_encoding_func
-	call	feistel_func
+	;call	feistel_func
 	call	send_message
 	goto	$
 
@@ -77,6 +76,9 @@ caesar_func:
 	return 
 
 vigenere_func:
+    
+	movlw	0x03
+	movwf	key_length, A
     	call	copy_plaintext		; Load plaintext from Flash to RAM
 	call	copy_key            ; Load key from Flash to RAM
 	call	print_plaintext		; Print the plaintext
@@ -124,7 +126,6 @@ feistel_func:
 	call measure_modify_table
 	call print_ciphertext
 	call print_timer
-
 
 send_message:	
 	lfsr	2,CiphertextArray

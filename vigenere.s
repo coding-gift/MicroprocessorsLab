@@ -1,42 +1,61 @@
 #include <xc.inc>
-extrn CiphertextArray, PlaintextArray, TableLength, counter_ec, KeyArray
-global vig_modify_table
+extrn CiphertextArray, PlaintextArray, TableLength, counter_ec, KeyArray, key_length
+global vig_modify_table, counter_key
     
-psect	modify_code,class=CODE
-    
-vig_modify_table:
-    ; Initialize FSR1 to point to PlaintextArray
-    lfsr    0, PlaintextArray
-    ; Initialize FSR2 to point to KeyArray
-    lfsr    1, KeyArray
-    ; Initialize FSR0 to point to CiphertextArray
-    lfsr    2, CiphertextArray
+psect udata_acs
+ counter_key: ds 1	; key counter
 
-    movlw   TableLength          ; Load the number of characters to process
-    movwf   counter_ec, A        ; Store in counter_ec
+psect	modify_code, class=CODE
+
+vig_modify_table:
+    lfsr    0, PlaintextArray  ; Set FSR0 to start of plaintext
+    lfsr    1, KeyArray        ; Set FSR1 to start of key
+    lfsr    2, CiphertextArray ; Set FSR2 to start of ciphertext
     
-    goto    vig_modify_loop          ; Start modification
+    movlw   0x00
+    movwf   counter_key, A
+
+    movlw   TableLength
+    movwf   counter_ec, A      ; Set counter for plaintext length
+
+    clrf    WREG, A
+    movwf   counter_key, A       ; Reset key index counter
+
+    goto    vig_modify_loop
 
 vig_modify_loop:
-    movf    counter_ec, W, A     ; Check if counter is zero
-    bz      vig_modify_done          ; If zero, we are done
+    movf    counter_ec, W, A
+    bz      vig_modify_done    ; Exit when all characters processed
 
-    movlw   0x60 ; making 'a' shift = 1
-    subwf   POSTINC0, W, A
+    movlw   0x60              ; 'a' shift = 1
+    subwf   POSTINC0, W, A    ; Convert plaintext letter to offset
 
-    addwf   POSTINC1, W, A    ; Add the key
-    cpfslt  'z', B               ; Compare WREG with 'z'
+    addwf   POSTINC1, W, A    ; Add corresponding key character, increment the key array position
     
-    btfss   STATUS, 2, A            ; If greater, it's out of range
-    bra     vig_wrap_done            ; If no wrap, skip
-    sublw   0x1A                 ; Subtract 'z' o make it within alphabet
+    incf    counter_key, A	; increment the key counter
     
-vig_wrap_done:    
-    movwf   POSTINC2, A         ; Write encrypted character to CiphertextArray
-    decfsz  counter_ec, A        ; Decrement counter and check if done
-    bra     vig_modify_loop          ; Loop again if not finished
+    cpfslt  'z', B
+    btfss   STATUS, 2, A
+    bra     vig_wrap_done
+    sublw   0x1A              ; Wrap around within alphabet
+
+vig_wrap_done:
+    movwf   POSTINC2, A       ; Store ciphertext character
+
+    movf    counter_key, W, A
+    subwf   key_length, W, A    ; Compare counter_k with KeyLength
+    btfsc   STATUS, 2, A         ; If counter_k == KeyLength, reset
+    bz	    reset_counter
+    goto    vig_continue
+    
+reset_counter:    
+    lfsr    1, KeyArray       ; Reset FSR1 to start of KeyArray
+    clrf    counter_key, A       ; Reset key counter
+    goto    vig_continue
+
+vig_continue:
+    decfsz  counter_ec, A
+    bra     vig_modify_loop    ; Repeat loop
 
 vig_modify_done:
     return
-
-
