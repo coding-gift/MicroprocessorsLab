@@ -11,7 +11,6 @@ measure_modify_table:
 	clrf    TMR1H, A     ; Clear Timer1 High Byte
 	clrf    TMR1L, A     ; Clear Timer1 Low Byte
 	clrf	overflow_count, A   ;clear the timer overflow byte
-
 	
 	movlw   0b00000001   ; Configure Timer1: Enable, No Prescaler, Fosc/4
 	movwf   T1CON, A     ; Enable Timer1
@@ -20,13 +19,13 @@ measure_modify_table:
 	;call    c_modify_table  ; Execute the function being measured
 	
 	; RSA
-	call	rsa_modify_table
+	;call	rsa_modify_table
 	
 	; VIGENERE CIPHER
 	;call	vig_modify_table
 	
 	; FEISTEL
-	;call feistel_modify_table
+	call feistel_modify_table
 
 
 	bcf     T1CON, 0, A    

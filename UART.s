@@ -11,11 +11,11 @@ UART_Setup:
     bcf	    ANSEL18
     bsf	    SPEN2	; enable
     bcf	    SYNC2	; asynchronous
-    bcf	    BRGH2	; slow speed
+    bsf	    BRGH2	; high speed
     bsf	    TXEN2	; enable transmit
     bsf	    CREN2	; enable receive
     bcf	    BRG162	; 8-bit generator only
-    movlw   103		; gives 9600 Baud rate (actually 9615)
+    movlw   34		; gives 115200 Baud rate (actually 9615)
     movwf   SPBRG2, B	; set baud rate
     clrf    LATG, A
 ;    bsf	    TRISG, 2, A	; TX2 pin is input on RG2 pin

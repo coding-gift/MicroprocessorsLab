@@ -31,15 +31,15 @@ DecryptedArray:	    ds 0x10
 psect	data    
 PlaintextTable:
 	db	'h','i','y','a','e', 'f', 'g','h', 'a', 'a','a', 'a','a','a','a','a'
-	TableLength   EQU	0x08
+	TableLength   EQU	0x04
 
 	align	2
 
 	psect key_data, class=CODE
 KeyTable:
-	db 'a','a','a','a', 'a', 'b', 'c', 'd', 'a', 'b', 'c', 'd'
+	db 'e','f','a','a', 'a', 'b', 'c', 'd', 'a', 'b', 'c', 'd'
 	KeyLength   EQU		0x06
-	align	1
+	align	2
 	
 psect	code, abs
 rst:	org 0x0
@@ -56,25 +56,17 @@ start:
 	;call	caesar_func
 	;call	caesar_decode_func
 	
-	call	rsa_encoding_func
-	call	rsa_decoding_func
+	;call	rsa_encoding_func
+	;call	rsa_decoding_func
 	
-	;call	feistel_func
-	;call	feistel_decrypt_func
+	call	feistel_func
+	call	feistel_decrypt_func
 	
 	;call    vigenere_func
 	;call	 vig_decrypt
 	
-	
-	
-	
-	
-	;call	send_message
-	
-	
-	
+	call	send_message
 
-	
 	goto	$
 
 caesar_func:
@@ -180,6 +172,7 @@ feistel_func:
 	call measure_modify_table
 	call print_ciphertext
 	call print_timer
+	return
 
 feistel_decrypt_func:
     movlw 0xFF
@@ -200,10 +193,10 @@ feistel_decrypt_func:
 	call feistel_decrypt
 	
 	call print_decodedtext
-
+	return
 send_message:	
 	lfsr	2,CiphertextArray
-	movf	TableLength, W, A
+	movlw	TableLength
 	call	UART_Transmit_Message
 ending:
     nop
