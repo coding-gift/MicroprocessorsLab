@@ -29,15 +29,15 @@ DecryptedArray:	    ds 0x10
     
 psect	data    
 PlaintextTable:
-	db	'z','w','a','a','e', 'f', 'g','h', 'a', 'a','a', 'a','a','a','a','a'
-	TableLength   EQU	0x04
+	db	'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'
+	TableLength   EQU	0x08
 
 	align	2
 
 	psect key_data, class=CODE
 KeyTable:
-	db 'a','b','c','d', 'a', 'b', 'c', 'd', 'a', 'b', 'c', 'd'
-	KeyLength   EQU		0x03
+	db 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'
+	KeyLength   EQU		0x08
 	align	2
 	
 psect	code, abs
@@ -62,13 +62,13 @@ start:
 	;call	feistel_decrypt_func
 	
 	call    vigenere_func
-	call	vig_decrypt
+	;call	vig_decrypt
 	
-	movlw	0xc7
-	call	LCD_Send_Byte_I
-	movlw	0x01
-	call	LCD_delay_ms
-	call	print_decodedtext
+	;movlw	0xc7
+	;call	LCD_Send_Byte_I
+	;movlw	0x01
+	;call	LCD_delay_ms
+	;call	print_decodedtext
 	
 	;call	send_message
 
@@ -90,23 +90,13 @@ caesar_func:
 	return 
 	
 caesar_decode_func:
-    
-	movlw 0xFF
-	call LCD_delay_ms
-	call LCD_delay_ms
-	call LCD_delay_ms
-	call LCD_delay_ms
-	call LCD_delay_ms
-	
-	movlw 0x01
-	call LCD_Send_Byte_I
-	
-	movlw 0xFF
-	call LCD_delay_ms
-	call LCD_delay_ms
-	call LCD_delay_ms
-	
+
 	call c_decode
+	
+	movlw 0xc7
+	call LCD_Send_Byte_I
+	movlw 0x01
+	call LCD_delay_ms
 	
 	call print_decodedtext
 	return 
