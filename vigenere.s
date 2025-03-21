@@ -1,5 +1,5 @@
 #include <xc.inc>
-extrn CiphertextArray, PlaintextArray, TableLength, counter_ec, KeyArray, key_length
+extrn CiphertextArray, PlaintextArray, TableLength, counter_ec, KeyArray, KeyLength
 global vig_modify_table, counter_key
     
 psect udata_acs
@@ -34,7 +34,6 @@ vig_modify_loop:
 
     movlw   0x60              ; 'a' shift = 1
     subwf   POSTINC0, W, A    ; Convert plaintext letter to offset
-
     addwf   POSTINC1, W, A    ; Add corresponding key character, increment the key array position
     
     cpfsgt      z_val, A
@@ -50,7 +49,7 @@ vig_wrap_done:
     movwf   POSTINC2, A       ; Store ciphertext character
     incf    counter_key, A	; increment the key counter
     movf    counter_key, W, A
-    subwf   key_length, W, A    ; Compare counter_k with KeyLength
+    sublw   KeyLength    ; Compare counter_k with KeyLength
     btfsc   STATUS, 2, A         ; If counter_k == KeyLength, reset
     bz	    reset_counter
     goto    vig_continue

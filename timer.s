@@ -22,10 +22,10 @@ measure_modify_table:
 	;call	rsa_modify_table
 	
 	; VIGENERE CIPHER
-	;call	vig_modify_table
+	call	vig_modify_table
 	
 	; FEISTEL
-	call feistel_modify_table
+	;call feistel_modify_table
 
 
 	bcf     T1CON, 0, A    
