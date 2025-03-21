@@ -4,6 +4,8 @@ global vig_modify_table, counter_key
     
 psect udata_acs
  counter_key: ds 1	; key counter
+    z_val:  ds 1
+ unwrapped_char:	ds 1
 
 psect	modify_code, class=CODE
 
@@ -20,6 +22,9 @@ vig_modify_table:
 
     clrf    WREG, A
     movwf   counter_key, A       ; Reset key index counter
+    
+    movlw 'z'
+    movwf  z_val, A
 
     goto    vig_modify_loop
 
@@ -32,16 +37,18 @@ vig_modify_loop:
 
     addwf   POSTINC1, W, A    ; Add corresponding key character, increment the key array position
     
-    incf    counter_key, A	; increment the key counter
-    
-    cpfslt  'z', B
-    btfss   STATUS, 2, A
-    bra     vig_wrap_done
-    sublw   0x1A              ; Wrap around within alphabet
+    cpfsgt      z_val, A
+    bra		subtract_z
+    bra		vig_wrap_done   
 
+subtract_z:
+    movwf   unwrapped_char, A
+    movlw   0x1A
+    subwf   unwrapped_char, W, A
+    
 vig_wrap_done:
     movwf   POSTINC2, A       ; Store ciphertext character
-
+    incf    counter_key, A	; increment the key counter
     movf    counter_key, W, A
     subwf   key_length, W, A    ; Compare counter_k with KeyLength
     btfsc   STATUS, 2, A         ; If counter_k == KeyLength, reset

@@ -30,8 +30,8 @@ DecryptedArray:	    ds 0x30
     
 psect	data    
 PlaintextTable:
-	db	'a','b','c','d'	
-	TableLength   EQU	0x04
+	db	'z','z','z','z','e', 'f', 'g','z', 'z', 'z','z', 'z','z','z','z','z'
+	TableLength   EQU	0x07
 
 	align	2
 
