@@ -1,7 +1,7 @@
 #include <xc.inc>
 
-extrn CiphertextArray, PlaintextArray, TableLength, counter_pt, LCD_Send_Byte_D, KeyArray, counter_k, KeyTable
-global print_plaintext, print_ciphertext, send_characters, copy_plaintext, PlaintextTable, copy_key, KeyTable
+extrn CiphertextArray, PlaintextArray, TableLength, counter_pt, LCD_Send_Byte_D, KeyArray, counter_k, KeyTable, DecryptedArray
+global print_plaintext, print_ciphertext, send_characters, copy_plaintext, PlaintextTable, copy_key, KeyTable, print_decodedtext
     
 psect	print_code,class=CODE
 
@@ -21,6 +21,17 @@ print_plaintext:
     movlw   LOW(PlaintextArray)  
     movwf   FSR0L, A
     movlw   HIGH(PlaintextArray) 
+    movwf   FSR0H, A
+
+    movlw   TableLength    ; Load the number of characters to print
+    movwf   counter_pt, A  ; Store in counter
+    goto    print_loop 
+    
+print_decodedtext:
+    ; Load the start address of PlaintextArray into FSR0
+    movlw   LOW(DecryptedArray)  
+    movwf   FSR0L, A
+    movlw   HIGH(DecryptedArray) 
     movwf   FSR0H, A
 
     movlw   TableLength    ; Load the number of characters to print

@@ -23,7 +23,7 @@ vig_modify_table:
     clrf    WREG, A
     movwf   counter_key, A       ; Reset key index counter
     
-    movlw 'z'
+    movlw '{'	; one more than z to fix overflow issue
     movwf  z_val, A
 
     goto    vig_modify_loop

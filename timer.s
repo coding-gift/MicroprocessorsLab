@@ -20,10 +20,10 @@ measure_modify_table:
 	;call    c_modify_table  ; Execute the function being measured
 	
 	; RSA
-	;call	rsa_modify_table
+	call	rsa_modify_table
 	
 	; VIGENERE CIPHER
-	call	vig_modify_table
+	;call	vig_modify_table
 	
 	; FEISTEL
 	;call feistel_modify_table
